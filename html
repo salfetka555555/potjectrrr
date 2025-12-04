@@ -1,0 +1,166 @@
+Функция запрашивает подтверждение у пользователя перед полным стиранием всех данных из хранилища. Если пользователь согласен, оно очищается и таблица обновляется.Код функции:<script type="text/javascript">
+// Функция полного очищения хранилища
+function clearStorage() {
+    if(confirm('Вы уверены, что хотите полностью очистить локальное хранилище?')){
+        currentStorage.clear();
+        updateTable(); // Обновляем таблицу после очистки
+    }
+}
+</script>Итоговая структура проекта:Здесь приведено общее представление всего набора функций и вспомогательных элементов:<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Управление хранилищами</title>
+    <style>
+        .delete-button {
+            cursor: pointer;
+            font-weight: bold;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<h1>Таблица данных</h1>
+
+<!-- Основная таблица -->
+<table id="tableData" border="1">
+    <thead>
+        <tr>
+            <th>Ключи</th>
+            <th>Значения</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<br/>
+
+<!-- Форма добавления данных -->
+<form id="addForm">
+    <label for="keyInput">Ключевое поле:</label><br />
+    <input type="text" id="keyInput"><br /><br />
+    <label for="valueInput">Значение поля:</label><br />
+    <textarea id="valueInput"></textarea><br/><br/>
+    <button type="submit" onclick="event.preventDefault(); addNewItem();">Добавить</button>
+</form>
+
+<!-- Блок для выбора хранилища -->
+<div>
+    <select id="storageSelect" onchange="getStorage(this.value)">
+        <option disabled selected>Выберите хранилище...</option>
+        <option value="local">Local storage</option>
+        <option value="session">Session storage</option>
+    </select>
+</div>
+
+<!-- Кнопка для очистки хранилища -->
+<button onclick="clearStorage()">Очистить хранилище</button>
+
+<script type="text/javascript">
+let currentStorage = null;
+
+// Функция обновления таблицы
+function updateTable() {
+    const tableBody = document.querySelector('#tableData > tbody');
+    tableBody.innerHTML = ''; // Очищаем тело таблицы
+
+    let data = JSON.parse(currentStorage.getItem('data')) || []; // Получаем данные из хранилища
+
+    if(data.length === 0){ // Если данных нет
+        let rowEmpty = document.createElement('tr');
+        let cellEmpty = document.createElement('td');
+        cellEmpty.colSpan = 3;
+        cellEmpty.textContent = 'Нет данных';
+        rowEmpty.appendChild(cellEmpty);
+        tableBody.appendChild(rowEmpty);
+    }
+    else {
+        data.forEach((item, index) => {
+            let row = document.createElement('tr');
+            let keyCell = document.createElement('td');
+            let valueCell = document.createElement('td');
+            let actionCell = document.createElement('td');
+
+            keyCell.textContent = item.key;
+            valueCell.textContent = item.value;
+
+            // Кнопка удаления элемента
+            let removeButton = document.createElement('span');
+            removeButton.className = 'delete-button';
+            removeButton.textContent = 'X';
+            removeButton.onclick = function () {
+                deleteItem(index); // Удаляем элемент по индексу
+            };
+            actionCell.appendChild(removeButton);
+
+            row.appendChild(keyCell);
+            row.appendChild(valueCell);
+            row.appendChild(actionCell);
+            tableBody.appendChild(row);
+        });
+    }
+}
+
+// Инициализация хранилища
+function getStorage(storageType) {
+    switch (storageType) {
+        case 'local':
+            currentStorage = window.localStorage;
+            break;
+        case 'session':
+            currentStorage = window.sessionStorage;
+            break;
+        default:
+            console.error('Некорректный тип хранилища.');
+            return;
+    }
+    updateTable(); // Обновляем таблицу после выбора хранилища
+}
+
+// Функция сохранения нового элемента
+function saveItem(key, value) {
+    let existingData = JSON.parse(currentStorage.getItem('data')) || [];
+    existingData.push({key: key, value: value}); // Добавляем новую запись
+    currentStorage.setItem('data', JSON.stringify(existingData)); // Сохраняем изменения
+    updateTable(); // Обновляем таблицу
+}
+
+// Вспомогательная функция добавления нового элемента через форму
+function addNewItem(){
+    let key = document.getElementById('keyInput').value.trim();
+    let value = document.getElementById('valueInput').value.trim();
+
+    if(!key || !value){
+        alert('Нужно заполнить оба поля!');
+        return;
+    }
+
+    saveItem(key, value); // Сохраняем данные
+    document.getElementById('keyInput').value = '';
+    document.getElementById('valueInput').value = '';
+}
+
+// Функция удаления элемента по указанному индексу
+function deleteItem(index) {
+    let existingData = JSON.parse(currentStorage.getItem('data'));
+    if(existingData && existingData[index]){
+        existingData.splice(index, 1); // Удаляем указанный элемент
+        currentStorage.setItem('data', JSON.stringify(existingData)); // Сохраняем изменения
+        updateTable(); // Обновляем таблицу
+    }
+}
+
+// Функция полного очищения хранилища
+function clearStorage() {
+    if(confirm('Вы уверены, что хотите полностью очистить локальное хранилище?')){
+        currentStorage.clear();
+        updateTable(); // Обновляем таблицу после очистки
+    }
+}
+
+// Обновляем таблицу при загрузке страницы
+window.addEventListener('load', updateTable);
+</script>
+</body>
+</html>
